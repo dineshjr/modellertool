@@ -28,7 +28,15 @@ BaseCustomProvider.$inject = ["eventBus"];
 
 // Updated Custom User Task Provider
 class CustomTaskProvider {
-  constructor(palette, create, elementFactory, bpmnFactory, contextPad, modeling, connect) {
+  constructor(
+    palette,
+    create,
+    elementFactory,
+    bpmnFactory,
+    contextPad,
+    modeling,
+    connect
+  ) {
     this.palette = palette;
     this.create = create;
     this.elementFactory = elementFactory;
@@ -41,9 +49,26 @@ class CustomTaskProvider {
     contextPad.registerProvider(this);
   }
 
-  getPaletteEntries() {
-    return {
-      "create.user-task": {
+  getPaletteEntries(element) {
+    return (entries) => {
+      const keysToDelete = [
+        "create.group",
+        "hand-tool",
+        "create.data-object",
+        "create.participant-expanded",
+        "create.data-store",
+        "lasso-tool",
+        "space-tool",
+        "global-connect-tool",
+      ];
+
+      // Iterate over the keys and delete them from entries
+      keysToDelete.forEach((key) => {
+        delete entries[key];
+      });
+
+      // Add your custom entries here
+      entries["create.user-task"] = {
         group: "activity",
         className: "bpmn-icon-user-task",
         title: "Create User Task",
@@ -51,8 +76,9 @@ class CustomTaskProvider {
           dragstart: (event) => this.createUserTask(event),
           click: (event) => this.createUserTask(event),
         },
-      },
-      "create.service-task": {
+      };
+
+      entries["create.service-task"] = {
         group: "activity",
         className: "bpmn-icon-service-task",
         title: "Create Service Task",
@@ -60,74 +86,97 @@ class CustomTaskProvider {
           dragstart: (event) => this.createServiceTask(event),
           click: (event) => this.createServiceTask(event),
         },
-      },
+      };
+      entries["create.script-task"] = {
+        group: "activity",
+        className: "bpmn-icon-script-task",
+        title: "Create Service Task",
+        action: {
+          dragstart: (event) => this.createScriptTask(event),
+          click: (event) => this.createScriptTask(event),
+        },
+      };
+      entries["create.parallel-task"] = {
+        group: "activity",
+        className: "bpmn-icon-script-task",
+        title: "Create Service Task",
+        action: {
+          dragstart: (event) => this.createScriptTask(event),
+          click: (event) => this.createScriptTask(event),
+        },
+      };
+
+      return entries;
     };
   }
-
   getContextPadEntries(element) {
     return {
-      'append.user-task': {
-        group: 'model',
-        className: 'bpmn-icon-user-task',
-        title: 'Append User Task',
+      "append.user-task": {
+        group: "model",
+        className: "bpmn-icon-user-task",
+        title: "Append User Task",
         action: {
           click: (event, element) => {
-            const shape = this.createShape('bpmn:UserTask', 'User Task');
+            const shape = this.createShape("bpmn:UserTask", "User Task");
             const position = {
               x: element.x + element.width + 100,
-              y: element.y
+              y: element.y,
             };
-            
+
             this.appendShape(element, shape, position);
-          }
-        }
+          },
+        },
       },
-      'append.service-task': {
-        group: 'model',
-        className: 'bpmn-icon-service-task',
-        title: 'Append Service Task',
+      "append.service-task": {
+        group: "model",
+        className: "bpmn-icon-service-task",
+        title: "Append Service Task",
         action: {
           click: (event, element) => {
-            const shape = this.createShape('bpmn:ServiceTask', 'Service Task');
+            const shape = this.createShape("bpmn:ServiceTask", "Service Task");
             const position = {
               x: element.x + element.width + 100,
-              y: element.y
+              y: element.y,
             };
-            
+
             this.appendShape(element, shape, position);
-          }
-        }
-      }
+          },
+        },
+      },
     };
   }
 
   createShape(type, name) {
     const businessObject = this.bpmnFactory.create(type, {
-      name: name
+      name: name,
     });
 
     return this.elementFactory.createShape({
       type: type,
       businessObject: businessObject,
       width: 100,
-      height: 80
+      height: 80,
     });
   }
 
   appendShape(source, shape, position) {
     this.modeling.appendShape(source, shape, position);
-    
+
     // Create a sequence flow connection
     const connection = this.modeling.connect(source, shape);
   }
 
   createUserTask(event) {
-    const shape = this.createShape('bpmn:UserTask', 'User Task');
+    const shape = this.createShape("bpmn:UserTask", "User Task");
     this.create.start(event, shape);
   }
 
   createServiceTask(event) {
-    const shape = this.createShape('bpmn:ServiceTask', 'Service Task');
+    const shape = this.createShape("bpmn:ServiceTask", "Service Task");
+    this.create.start(event, shape);
+  }
+  createScriptTask(event) {
+    const shape = this.createShape("bpmn:ScriptTask", "Script Task");
     this.create.start(event, shape);
   }
 }
@@ -139,18 +188,16 @@ CustomTaskProvider.$inject = [
   "bpmnFactory",
   "contextPad",
   "modeling",
-  "connect"
+  "connect",
 ];
 
 // Create a complete custom module
 
 const customModule = {
-  __init__: ['customTaskProvider', 'baseCustomProvider'],
-  baseCustomProvider: ['type', BaseCustomProvider],
-  customTaskProvider: ['type', CustomTaskProvider]
+  __init__: ["customTaskProvider", "baseCustomProvider"],
+  baseCustomProvider: ["type", BaseCustomProvider],
+  customTaskProvider: ["type", CustomTaskProvider],
 };
-
-
 
 const PropertiesPanel = ({ selectedElement, onPropertyChange }) => {
   const [localProperties, setLocalProperties] = useState({
@@ -284,7 +331,8 @@ const PropertiesPanel = ({ selectedElement, onPropertyChange }) => {
 };
 
 // Main Modeller Component
-const Modeller = () => {const [modeler, setModeler] = useState(null);
+const Modeller = () => {
+  const [modeler, setModeler] = useState(null);
   const [selectedElement, setSelectedElement] = useState(null);
   const containerRef = useRef(null);
 
@@ -320,7 +368,7 @@ const Modeller = () => {const [modeler, setModeler] = useState(null);
         gridModule,
         lintModule,
         tokenSimulationModule,
-        customModule // Use the custom module instead of direct provider registration
+        customModule, // Use the custom module instead of direct provider registration
       ],
       propertiesPanel: {
         parent: ".properties-container",
@@ -342,9 +390,12 @@ const Modeller = () => {const [modeler, setModeler] = useState(null);
     const setupModeler = async () => {
       try {
         const result = await bpmnModeler.importXML(initialDiagram);
-        
+
         if (result.warnings.length) {
-          console.warn("Warnings while importing BPMN diagram:", result.warnings);
+          console.warn(
+            "Warnings while importing BPMN diagram:",
+            result.warnings
+          );
         }
 
         const canvas = bpmnModeler.get("canvas");
